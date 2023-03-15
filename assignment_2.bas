@@ -1,87 +1,157 @@
-Attribute VB_Name = "Module1"
+Sub MultipleYearStockData():
 
-
-Sub assigment_2()
-
-    Dim ticker As String
-    Dim vol As Integer
-    Dim year_open As Double
-    Dim year_close As Double
-    Dim yearly_change As Double
-    Dim percent_change As Double
-    Dim Summary_Table_Row As Integer
-
-'this prevents my overflow error
-    On Error Resume Next
-
-'run through each worksheet
-    For Each Worksheet In ThisWorkbook.Worksheets
-
-'set headers
-    Cells(1, 9).Value = "Ticker"
-    Cells(1, 10).Value = "Yearly Change"
-    Cells(1, 11).Value = "Percent Change"
-    Cells(1, 12).Value = "Total Stock Volume"
-
-'setup integers for loop
-    Summary_Table_Row = 2
-
-'loop
-    For i = 2 To ws.UsedRange.Rows.Count
-
-If Cells(i + 1, 1).Value <> Cells(i, 1).Value Then
-
-'find all the values
-    ticker = Cells(i, 1).Value
-    vol = Cells(i, 7).Value
-    year_open = Cells(i, 3).Value
-    year_close = ws.Cells(i, 6).Value
-    yearly_change = year_close - year_open
-    percent_change = (year_close - year_open) / year_close
+    For Each ws In Worksheets
     
-'insert values into summary
-    Cells(Summary_Table_Row, 9).Value = ticker
-    Cells(Summary_Table_Row, 10).Value = yearly_change
-    Cells(Summary_Table_Row, 11).Value = percent_change
-    Cells(Summary_Table_Row, 12).Value = vol
-
-    Summary_Table_Row = Summary_Table_Row + 1
-    vol = 0
-End If
-    'finish loop
-Next i
-
-Columns("K").NumberFormat = "0.00%"
-
-'format columns colors
-    Dim rg As Range
-    Dim g As Double
-    Dim c As Double
-    Dim color_cell As Range
-    
-    Set rg = ws.Range("J2", Range("J2").End(xlDown))
-    c = rg.Cells.Count
-    For g = 1 To c
-        Set color_cell = rg(g)
-        Select Case color_cell
-        Case Is >= 0
-    With color_cell
-    .Interior.Color = vbGreen
-End With
-
-    Case Is < 0
-    With color_cell
-    .Interior.Color = vbRed
-End With
-
-End Select
-
-Next g
-
-'move to next worksheet
-Next Worksheet
-
+        Dim WorksheetName As String
+        'Current row
+        Dim i As Long
+        'Start row of ticker block
+        Dim j As Long
+        'Index counter to fill Ticker row
+        Dim TickCount As Long
+        'Last row column A
+        Dim LastRowA As Long
+        'last row column I
+        Dim LastRowI As Long
+        'Variable for percent change calculation
+        Dim PerChange As Double
+        'Variable for greatest increase calculation
+        Dim GreatIncr As Double
+        'Variable for greatest decrease calculation
+        Dim GreatDecr As Double
+        'Variable for greatest total volume
+        Dim GreatVol As Double
+        
+        'Get the WorksheetName
+        WorksheetName = ws.Name
+        
+        'Create column headers
+        ws.Cells(1, 9).Value = "Ticker"
+        ws.Cells(1, 10).Value = "Yearly Change"
+        ws.Cells(1, 11).Value = "Percent Change"
+        ws.Cells(1, 12).Value = "Total Stock Volume"
+        ws.Cells(1, 16).Value = "Ticker"
+        ws.Cells(1, 17).Value = "Value"
+        ws.Cells(2, 15).Value = "Greatest % Increase"
+        ws.Cells(3, 15).Value = "Greatest % Decrease"
+        ws.Cells(4, 15).Value = "Greatest Total Volume"
+        
+        'Set Ticker Counter to first row
+        TickCount = 2
+        
+        'Set start row to 2
+        j = 2
+        
+        'Find the last non-blank cell in column A
+        LastRowA = ws.Cells(Rows.Count, 1).End(xlUp).Row
+        'MsgBox ("Last row in column A is " & LastRowA)
+        
+            'Loop through all rows
+            For i = 2 To LastRowA
+            
+                'Check if ticker name changed
+                If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+                
+                'Write ticker in column I (#9)
+                ws.Cells(TickCount, 9).Value = ws.Cells(i, 1).Value
+                
+                'Calculate and write Yearly Change in column J (#10)
+                ws.Cells(TickCount, 10).Value = ws.Cells(i, 6).Value - ws.Cells(j, 3).Value
+                
+                    'Conditional formating
+                    If ws.Cells(TickCount, 10).Value < 0 Then
+                
+                    'Set cell background color to red
+                    ws.Cells(TickCount, 10).Interior.ColorIndex = 3
+                
+                    Else
+                
+                    'Set cell background color to green
+                    ws.Cells(TickCount, 10).Interior.ColorIndex = 4
+                
+                    End If
+                    
+                    'Calculate and write percent change in column K (#11)
+                    If ws.Cells(j, 3).Value <> 0 Then
+                    PerChange = ((ws.Cells(i, 6).Value - ws.Cells(j, 3).Value) / ws.Cells(j, 3).Value)
+                    
+                    'Percent formating
+                    ws.Cells(TickCount, 11).Value = Format(PerChange, "Percent")
+                    
+                    Else
+                    
+                    ws.Cells(TickCount, 11).Value = Format(0, "Percent")
+                    
+                    End If
+                    
+                'Calculate and write total volume in column L (#12)
+                ws.Cells(TickCount, 12).Value = WorksheetFunction.Sum(Range(ws.Cells(j, 7), ws.Cells(i, 7)))
+                
+                'Increase TickCount by 1
+                TickCount = TickCount + 1
+                
+                'Set new start row of the ticker block
+                j = i + 1
+                
+                End If
+            
+            Next i
+            
+        'Find last non-blank cell in column I
+        LastRowI = ws.Cells(Rows.Count, 9).End(xlUp).Row
+        'MsgBox ("Last row in column I is " & LastRowI)
+        
+        'Prepare for summary
+        GreatVol = ws.Cells(2, 12).Value
+        GreatIncr = ws.Cells(2, 11).Value
+        GreatDecr = ws.Cells(2, 11).Value
+        
+            'Loop for summary
+            For i = 2 To LastRowI
+            
+                'For greatest total volume--check if next value is larger--if yes take over a new value and populate ws.Cells
+                If ws.Cells(i, 12).Value > GreatVol Then
+                GreatVol = ws.Cells(i, 12).Value
+                ws.Cells(4, 16).Value = ws.Cells(i, 9).Value
+                
+                Else
+                
+                GreatVol = GreatVol
+                
+                End If
+                
+                'For greatest increase--check if next value is larger--if yes take over a new value and populate ws.Cells
+                If ws.Cells(i, 11).Value > GreatIncr Then
+                GreatIncr = ws.Cells(i, 11).Value
+                ws.Cells(2, 16).Value = ws.Cells(i, 9).Value
+                
+                Else
+                
+                GreatIncr = GreatIncr
+                
+                End If
+                
+                'For greatest decrease--check if next value is smaller--if yes take over a new value and populate ws.Cells
+                If ws.Cells(i, 11).Value < GreatDecr Then
+                GreatDecr = ws.Cells(i, 11).Value
+                ws.Cells(3, 16).Value = ws.Cells(i, 9).Value
+                
+                Else
+                
+                GreatDecr = GreatDecr
+                
+                End If
+                
+            'Write summary results in ws.Cells
+            ws.Cells(2, 17).Value = Format(GreatIncr, "Percent")
+            ws.Cells(3, 17).Value = Format(GreatDecr, "Percent")
+            ws.Cells(4, 17).Value = Format(GreatVol, "Scientific")
+            
+            Next i
+            
+        'Djust column width automatically
+        Worksheets(WorksheetName).Columns("A:Z").AutoFit
+            
+    Next ws
+        
 End Sub
-    
-
-
